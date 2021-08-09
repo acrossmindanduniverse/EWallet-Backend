@@ -2,6 +2,7 @@ const { response } = require('../helpers')
 const UserModel = require('../models/user')
 const History = require('../models/history')
 const { Op, Sequelize } = require('sequelize')
+const bcrypt = require('bcrypt')
 const path = './assets/pictures'
 const fs = require('fs')
 const { APP_UPLOAD_ROUTE, APP_URL } = process.env
@@ -43,6 +44,34 @@ module.exports = {
       }
       const result = await UserModel.update(setData, { where: { id: getUser.dataValues.id } })
       console.log(result.length)
+      return response(res, true, result, 200)
+    } catch (err) {
+      console.log(err)
+      return response(res, false, 'An error occured', 500)
+    }
+  },
+
+  confirmPassword: async (req, res) => {
+    const data = req.authUser.result[0]
+    const { password } = req.body
+    try {
+      console.log(req.authUser.result[0], 'result')
+      const compare = await bcrypt.compare(password, data.password)
+      if (!compare) return response(res, false, 'Incorrect password', 400)
+      return response(res, true, compare, 200)
+    } catch (err) {
+      console.log(err)
+      return response(res, false, 'An error occured', 500)
+    }
+  },
+
+  updatePassword: async (req, res) => {
+    const { id } = req.authUser.result[0]
+    const { password, resendPassword } = req.body
+    try {
+      if (password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
+      if (resendPassword !== password) return response(res, false, 'Password did not match', 400)
+      const result = await UserModel.update(password, { where: { id: id } })
       return response(res, true, result, 200)
     } catch (err) {
       console.log(err)
