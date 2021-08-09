@@ -67,11 +67,14 @@ module.exports = {
 
   updatePassword: async (req, res) => {
     const { id } = req.authUser.result[0]
-    const { password, resendPassword } = req.body
+    const setData = req.body
+    if (setData.password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
+    if (setData.resendPassword !== setData.password) return response(res, false, 'Password did not match', 400)
+    setData.password = await bcrypt.hash(setData.password, await bcrypt.genSalt())
     try {
-      if (password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
-      if (resendPassword !== password) return response(res, false, 'Password did not match', 400)
-      const result = await UserModel.update(password, { where: { id: id } })
+      const signed = await UserModel.findByPk(id)
+      const result = signed.set('password', (setData.password))
+      await result.save()
       return response(res, true, result, 200)
     } catch (err) {
       console.log(err)
