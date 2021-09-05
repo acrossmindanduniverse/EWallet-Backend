@@ -5,7 +5,8 @@ const { Op, Sequelize } = require('sequelize')
 const bcrypt = require('bcrypt')
 const path = './assets/pictures'
 const fs = require('fs')
-const { APP_UPLOAD_ROUTE, APP_URL } = process.env
+// APP_URL
+const { APP_UPLOAD_ROUTE, APP_URL_DEV } = process.env
 
 module.exports = {
 
@@ -55,7 +56,6 @@ module.exports = {
     const data = req.authUser.result[0]
     const { password } = req.body
     try {
-      console.log(req.authUser.result[0], 'result')
       const compare = await bcrypt.compare(password, data.password)
       if (!compare) return response(res, false, 'Incorrect password', 400)
       return response(res, true, compare, 200)
@@ -81,6 +81,32 @@ module.exports = {
       return response(res, false, 'An error occured', 500)
     }
   },
+
+  // uploadPhoto: async (req, res) => {
+  //   const { id } = req.authUser.result[0]
+  //   const setData = req.body
+  //   try {
+  //     const getUser = await UserModel.findByPk(id)
+  //     if (setData.picture) {
+  //       setData.picture = `${APP_UPLOAD_ROUTE}/${req.file.filename}`
+  //     } else {
+  //       setData.picture = getUser.dataValues.picture
+  //     }
+  //     if (setData.picture !== undefined && getUser.dataValues.picture !== null) {
+  //       const slicePicture = getUser.dataValues.picture.slice('7')
+  //       fs.unlinkSync(`${path}${slicePicture}`, (err, newData) => {
+  //         if (!err) return response(res, true, newData, 200)
+  //       })
+  //     }
+  //     console.log(req.file, 'test data')
+  //     const result = getUser.set('picture', (setData.picture))
+  //     await result.save()
+  //     return response(res, true, result, 400)
+  //   } catch (err) {
+  //     console.log(err)
+  //     return response(res, false, 'An error occured', 500)
+  //   }
+  // },
 
   getUserByPhoneNumber: async (req, res) => {
     const setData = req.query
@@ -125,8 +151,6 @@ module.exports = {
     const pageInfo = {}
 
     try {
-      // const getUser = await History.findAll({ where: { receiver: data.id } })
-      // const splitHistory = cond.sort.split(8)
       const result = await History.findAndCountAll({
         where: {
           receiver: data.id,
@@ -148,9 +172,9 @@ module.exports = {
       pageInfo.currentPage = cond.page
       pageInfo.totalPage = totalPage
       pageInfo.limitData = cond.limit
-      pageInfo.nextPage = cond.page < totalPage ? `${APP_URL}/user/history?page=${cond.page + 1}` : null
-      pageInfo.prevPage = cond.page <= totalPage || cond.page === 1 ? `${APP_URL}/user/history?page=${cond.page - 1}` : null
-      if (pageInfo.prevPage === `${APP_URL}/user/history?page=0`) pageInfo.prevPage = null
+      pageInfo.nextPage = cond.page < totalPage ? `${APP_URL_DEV}/user/history?page=${cond.page + 1}` : null
+      pageInfo.prevPage = cond.page <= totalPage || cond.page === 1 ? `${APP_URL_DEV}/user/history?page=${cond.page - 1}` : null
+      if (pageInfo.prevPage === `${APP_URL_DEV}/user/history?page=0`) pageInfo.prevPage = null
       if (result.length === 0) return response(res, false, 'there is no item anymore', 200)
       const cleanResult = result.rows.map(e => e.dataValues)
       console.log(cleanResult, 'data 123')

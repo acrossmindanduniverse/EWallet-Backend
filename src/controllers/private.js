@@ -60,7 +60,6 @@ module.exports = {
   createTransfer: async (req, res) => {
     const setData = req.body
     const { id, email } = req.authUser.result[0]
-    console.log(req.authUser.result.balance)
     try {
       const findUser = await UserModel.findOne({
         where: { phone: setData.phone },
@@ -87,12 +86,15 @@ module.exports = {
         if (err) return response(res, false, 'An error occured', 500)
         return response(res, true, data, 200)
       })
-      firebase.messaging.sendToDevice(findUser.fcm_token.token, {
-        notification: {
-          title: 'AVA',
-          body: `${req.authUser.result[0].name} mengirimkan dana sebesar Rp${Number(setData.deductedBalance).toLocaleString('en')} melalui aplikasi AVA`
-        }
-      })
+      console.log(findUser.fcm_token.dataValues.token, 'test token')
+      if (findUser?.fcm_token.dataValues.token !== undefined) {
+        firebase.messaging.sendToDevice(findUser?.fcm_token.dataValues.token, {
+          notification: {
+            title: 'AVA',
+            body: `${req.authUser.result[0].name} mengirimkan dana sebesar Rp${Number(setData.deductedBalance).toLocaleString('en')} melalui aplikasi AVA`
+          }
+        })
+      }
       return response(res, true, result, 200)
     } catch (err) {
       console.log(err)

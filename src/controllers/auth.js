@@ -38,11 +38,10 @@ module.exports = {
           expiresIn: '1h'
         })
         result.data = { refreshToken, token, id: user.id, phone: user.phone, email: user.email, picture: user.picture, name: user.name, balance: user.balance }
-        console.log(typeof result.data, 'result length')
         return response(res, true, result.data, 200)
       }
     } catch (err) {
-      return response(res, false, 'Email or password did not match to the record', 400)
+      return response(res, false, 'An error occured', 500)
     }
   },
 
