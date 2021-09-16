@@ -11,9 +11,11 @@ module.exports = {
 
   signUp: async (req, res) => {
     const setData = req.body
+    const findUser = await UserModel.findOne({ where: { email: setData.email } })
+    if ([findUser][0] !== null) return response(res, false, 'email unavailable', 400)
+    if (setData.password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
     setData.password = await bcrypt.hash(setData.password, await bcrypt.genSalt())
     try {
-      if (setData.password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
       const result = await UserModel.create(setData)
       return response(res, true, result, 200)
     } catch (err) {
@@ -28,6 +30,7 @@ module.exports = {
       const result = await UserModel.findOrCreate({
         where: { email }
       })
+
       const user = result[0]
       const compare = await bcrypt.compare(password, user.password)
       if (compare) {
@@ -39,6 +42,8 @@ module.exports = {
         })
         result.data = { refreshToken, token, id: user.id, phone: user.phone, email: user.email, picture: user.picture, name: user.name, balance: user.balance }
         return response(res, true, result.data, 200)
+      } else {
+        return response(res, false, 'email or password did not match', 400)
       }
     } catch (err) {
       return response(res, false, 'An error occured', 500)
