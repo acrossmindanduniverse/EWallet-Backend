@@ -27,12 +27,14 @@ module.exports = {
   signIn: async (req, res) => {
     const { email, password } = req.body
     try {
-      const result = await UserModel.findOrCreate({
-        where: { email }
+      const result = await UserModel.findOne({
+        where: { email: email }
       })
-
-      const user = result[0]
-      const compare = await bcrypt.compare(password, user.password)
+      if (!result) return response(res, false, 'email or password did not match', 400)
+      console.log(result, 'test result')
+      const user = result
+      const compare = await bcrypt.compare(password, result.password)
+      console.log(compare, 'test compare')
       if (compare) {
         const token = jwt.sign({ ...result }, JWT.secretKey, {
           expiresIn: '1m'
@@ -73,7 +75,7 @@ module.exports = {
 
   registerFCMToken: async (req, res) => {
     const { token } = req.body
-    const { id } = req.authUser.result[0]
+    const { id } = req.authUser.result.dataValues
     console.log(req.headers)
     console.log(req.body)
     try {

@@ -11,7 +11,7 @@ const { APP_UPLOAD_ROUTE, APP_URL_DEV } = process.env
 module.exports = {
 
   getUserData: async (req, res) => {
-    const data = req.authUser.result[0]
+    const data = req.authUser.result.dataValues
     console.log(req.authUser)
     try {
       const result = await UserModel.findByPk(data.id)
@@ -28,7 +28,7 @@ module.exports = {
   },
 
   editProfile: async (req, res) => {
-    const data = req.authUser.result[0]
+    const data = req.authUser.result.dataValues
     const setData = req.body
     try {
       const getUser = await UserModel.findByPk(data.id)
@@ -53,7 +53,7 @@ module.exports = {
   },
 
   confirmPassword: async (req, res) => {
-    const data = req.authUser.result[0]
+    const data = req.authUser.result.dataValues
     const { password } = req.body
     try {
       const compare = await bcrypt.compare(password, data.password)
@@ -66,7 +66,7 @@ module.exports = {
   },
 
   updatePassword: async (req, res) => {
-    const { id } = req.authUser.result[0]
+    const { id } = req.authUser.result.dataValues
     const setData = req.body
     if (setData.password.length < 8) return response(res, false, 'Password must be 8 or greater characters long', 400)
     if (setData.resendPassword !== setData.password) return response(res, false, 'Password did not match', 400)
@@ -82,31 +82,29 @@ module.exports = {
     }
   },
 
-  // uploadPhoto: async (req, res) => {
-  //   const { id } = req.authUser.result[0]
-  //   const setData = req.body
-  //   try {
-  //     const getUser = await UserModel.findByPk(id)
-  //     if (setData.picture) {
-  //       setData.picture = `${APP_UPLOAD_ROUTE}/${req.file.filename}`
-  //     } else {
-  //       setData.picture = getUser.dataValues.picture
-  //     }
-  //     if (setData.picture !== undefined && getUser.dataValues.picture !== null) {
-  //       const slicePicture = getUser.dataValues.picture.slice('7')
-  //       fs.unlinkSync(`${path}${slicePicture}`, (err, newData) => {
-  //         if (!err) return response(res, true, newData, 200)
-  //       })
-  //     }
-  //     console.log(req.file, 'test data')
-  //     const result = getUser.set('picture', (setData.picture))
-  //     await result.save()
-  //     return response(res, true, result, 400)
-  //   } catch (err) {
-  //     console.log(err)
-  //     return response(res, false, 'An error occured', 500)
-  //   }
-  // },
+  uploadPhoto: async (req, res) => {
+    const { id } = req.authUser.result.dataValues
+    const setData = req.body
+    try {
+      const getUser = await UserModel.findByPk(id)
+      if (req.file) {
+        setData.picture = `${APP_UPLOAD_ROUTE}/${req.file.filename}`
+      } else {
+        setData.picture = getUser.dataValues.picture
+      }
+      if (req.file !== undefined && getUser.dataValues.picture !== null) {
+        const slicePicture = getUser.dataValues.picture.slice('7')
+        fs.unlinkSync(`${path}${slicePicture}`, (err, newData) => {
+          if (!err) return response(res, true, newData, 200)
+        })
+      }
+      const result = await UserModel.update(setData, { where: { id: getUser.dataValues.id } })
+      return response(res, true, result, 400)
+    } catch (err) {
+      console.log(err)
+      return response(res, false, 'An error occured', 500)
+    }
+  },
 
   getUserByPhoneNumber: async (req, res) => {
     const setData = req.query
@@ -139,7 +137,7 @@ module.exports = {
   },
 
   getHistory: async (req, res) => {
-    const data = req.authUser.result[0]
+    const data = req.authUser.result.dataValues
     const cond = req.query
     cond.search = cond.search || ''
     cond.sort = cond.sort || {}

@@ -16,13 +16,15 @@ module.exports = {
     const setData = req.body
     try {
       const getItemById = await Product.findByPk(setData.item_id)
+      console.log(getItemById, 'test 12390-12390-')
       const itemData = getItemById.dataValues
       const itemVariant = await ProductDetail.findByPk(setData.item_variant)
-      const code = codeTransaction(APP_TRANSACTION_PREFIX, 1)
+      console.log(itemVariant, 'test 123123')
+      const { id } = req.authUser.result.dataValues
+      const code = codeTransaction(APP_TRANSACTION_PREFIX, id)
       const total = itemVariant.dataValues.price
       const itemName = itemData.name
       const { variant } = itemVariant.dataValues
-      const { id } = req.authUser.result[0]
       const finalData = {
         refNo: code, deductedBalance: total, itemName: itemName, description: variant, userId: id
       }
@@ -46,8 +48,8 @@ module.exports = {
   },
 
   detailTransaction: async (req, res) => {
-    const { id } = req.authUser.result[0]
-    console.log(req.authUser.result[0])
+    const { id } = req.authUser.result.dataValues
+    console.log(req.authUser.result.dataValues)
     try {
       const result = await Transaction.findAll({ where: { userId: id } })
       return response(res, true, result, 200)
@@ -59,7 +61,7 @@ module.exports = {
 
   createTransfer: async (req, res) => {
     const setData = req.body
-    const { id, email } = req.authUser.result[0]
+    const { id, email } = req.authUser.result.dataValues
     try {
       const findUser = await UserModel.findOne({
         where: { phone: setData.phone },
@@ -67,7 +69,7 @@ module.exports = {
       })
       if (setData.deductedBalance < 10000) return response(res, false, 'transfer minimum is Rp.10.000', 400)
       setData.receiverId = findUser.id
-      setData.userId = req.authUser.result[0].id
+      setData.userId = req.authUser.result.dataValues.id
       const code = codeTransaction('TF', 1)
       const result = await Transfer.create(setData)
       if (setData.receiverId === id) return response(res, false, 'Failed to make transaction', 400)
@@ -91,7 +93,7 @@ module.exports = {
         firebase.messaging.sendToDevice(findUser?.fcm_token.dataValues.token, {
           notification: {
             title: 'AVA',
-            body: `${req.authUser.result[0].name} mengirimkan dana sebesar Rp${Number(setData.deductedBalance).toLocaleString('en')} melalui aplikasi AVA`
+            body: `${req.authUser.result.dataValues.name} mengirimkan dana sebesar Rp${Number(setData.deductedBalance).toLocaleString('en')} melalui aplikasi AVA`
           }
         })
       }
@@ -103,7 +105,7 @@ module.exports = {
   },
 
   detailTransfer: async (req, res) => {
-    const { id } = req.authUser.result[0]
+    const { id } = req.authUser.result.dataValues
     try {
       const result = await Transfer.findAll({ where: { receiverId: id } })
       if (parseInt(result[0].dataValues.receiverId) !== id) return response(res, false, 'you do not have permission to access this source', 400)
@@ -115,11 +117,16 @@ module.exports = {
   },
 
   createTopUp: async (req, res) => {
-    const { id } = req.authUser.result[0]
+    const { id } = req.authUser.result.dataValues
+    console.log(id)
     const setData = req.body
     try {
       if (setData.balance < 10000) return response(res, false, 'Transfer minimum is Rp.10.000', 400)
       const result = await UserModel.findByPk(id)
+      if (result.balance === null) {
+        result.set('balance', (parseInt(parseInt(setData.balance))))
+        await result.save()
+      }
       result.set('balance', (parseInt(parseInt(setData.balance) + parseInt(result.dataValues.balance))))
       await result.save()
       return response(res, true, result, 200)
