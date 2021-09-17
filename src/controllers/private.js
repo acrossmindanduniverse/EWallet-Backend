@@ -126,9 +126,10 @@ module.exports = {
       if (result.balance === null) {
         result.set('balance', (parseInt(parseInt(setData.balance))))
         await result.save()
+      } else {
+        result.set('balance', (parseInt(parseInt(setData.balance) + parseInt(result.dataValues.balance))))
+        await result.save()
       }
-      result.set('balance', (parseInt(parseInt(setData.balance) + parseInt(result.dataValues.balance))))
-      await result.save()
       return response(res, true, result, 200)
     } catch (err) {
       console.log(err)
